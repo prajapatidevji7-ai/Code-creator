@@ -1,0 +1,217 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dev Code Creator PRO</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Segoe UI',sans-serif;
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  color:white;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+nav{
+  background:#111;
+  padding:12px;
+  position:sticky;
+  top:0;
+  z-index:1000;
+  box-shadow:0 2px 10px rgba(0,0,0,0.5);
+}
+nav button{
+  background:none;
+  border:none;
+  color:#00e5ff;
+  margin:0 12px;
+  font-size:16px;
+  font-weight:bold;
+}
+.page{display:none;padding:15px;flex:1;}
+.active{display:block}
+.card{
+  background:rgba(255,255,255,0.08);
+  padding:15px;
+  border-radius:12px;
+  max-width:900px;
+  margin:auto;
+}
+textarea{
+  width:100%;
+  height:38vh;
+  background:#0d0d0d;
+  color:#00ffcc;
+  border:none;
+  border-radius:10px;
+  padding:12px;
+  font-family:monospace;
+  resize:none;
+}
+.btn{
+  padding:10px 16px;
+  margin:8px 5px;
+  border:none;
+  border-radius:6px;
+  background:#00e5ff;
+  font-weight:bold;
+}
+iframe{
+  width:100%;
+  height:40vh;
+  border:none;
+  border-radius:8px;
+  background:white;
+  margin-top:10px;
+}
+footer{
+  padding:10px;
+  background:#111;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <button onclick="showPage('editor')">Home</button>
+  <button onclick="showPage('saved')">Saved</button>
+</nav>
+
+<div id="editor" class="page active">
+  <div class="card">
+    <h2>Code Lab</h2>
+    <textarea id="codeBox"><h1 style="color:black;">Welcome Devji 🚀</h1></textarea><br>
+    <button class="btn" onclick="runCode()">Run</button>
+    <button class="btn" onclick="saveProject()">Save</button>
+    <button class="btn" onclick="exportHTML()">Export HTML</button>
+    <button class="btn" onclick="clearCode()">Clear</button>
+    <iframe id="output"></iframe>
+  </div>
+</div>
+
+<div id="saved" class="page">
+  <h2>Saved Projects</h2>
+  <div id="savedList"></div>
+</div>
+
+<footer>Dev Code Creator PRO</footer>
+
+<script>
+let codeBox, savedList;
+let projects=[];
+let timer;
+
+window.addEventListener("DOMContentLoaded",()=>{
+  codeBox=document.getElementById("codeBox");
+  savedList=document.getElementById("savedList");
+
+  try{
+    projects=JSON.parse(localStorage.getItem("dev_projects")||"[]");
+  }catch(e){projects=[];}
+
+  renderProjects();
+  runCode();
+
+  codeBox.addEventListener("input",()=>{
+    clearTimeout(timer);
+    timer=setTimeout(runCode,400);
+  });
+});
+
+function showPage(id){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if(id==="saved") renderProjects();
+}
+
+function runCode(){
+  const frame=document.getElementById("output").contentDocument;
+  frame.open();
+  frame.write(codeBox.value);
+  frame.close();
+}
+
+function clearCode(){codeBox.value=""}
+
+function saveProject(){
+  const name=prompt("Project name:");
+  if(!name) return;
+  const data={name:name, code:codeBox.value};
+  projects.push(data);
+  localStorage.setItem("dev_projects",JSON.stringify(projects));
+  renderProjects();
+  alert("Saved!");
+}
+
+function renderProjects(){
+  savedList.innerHTML=projects.length===0?"No saved projects":"";
+  projects.forEach((p,i)=>{
+    savedList.innerHTML+=`
+      <div style="background:#111;margin:10px;padding:10px;border-radius:8px;">
+        <b>${p.name}</b><br>
+        <button onclick="loadProject(${i})">Load</button>
+        <button onclick="deleteProject(${i})">Delete</button>
+      </div>
+    `;
+  });
+}
+
+function loadProject(i){
+  codeBox.value=projects[i].code;
+  showPage('editor');
+  runCode();
+}
+
+function deleteProject(i){
+  projects.splice(i,1);
+  localStorage.setItem("dev_projects",JSON.stringify(projects));
+  renderProjects();
+}
+
+/* 🔥 SYSTEM FILE SAVE (LIKE VIDEO) */
+async function exportHTML(){
+  let code = codeBox.value.trim();
+
+  if(!code.toLowerCase().includes("<html")){
+    code = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exported Project</title>
+</head>
+<body>
+${code}
+</body>
+</html>`;
+  }
+
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: "project.html",
+      types: [{
+        description: "HTML File",
+        accept: { "text/html": [".html"] }
+      }]
+    });
+
+    const writable = await handle.createWritable();
+    await writable.write(code);
+    await writable.close();
+
+    alert("File Manager ma save thai gayu ✅");
+  } catch (err) {
+    alert("Aa app support nathi karti. Chrome ma open karo.");
+  }
+}
+</script>
+
+</body>
+</html>
